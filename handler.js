@@ -15,6 +15,22 @@ function saveNameToTable(name) {
 	return dynamo.put(params).promise();
 }
 
+function getNameFromTable(name) {
+	const params = {
+		Key: {
+			name: name
+		},
+		TableName: 'GreetNames'
+	};
+
+	return dynamo
+		.get(params)
+		.promise()
+		.then(response => {
+			return response.Item;
+		});
+}
+
 function sendResponse(statusCode, message, callback) {
 	const response = {
 		statusCode: statusCode,
@@ -41,4 +57,24 @@ module.exports.hello = (event, context, callback) => {
 			});
 	}
 	sendResponse(200, message, callback);
+};
+
+module.exports.wasGreeted = (event, context, callback) => {
+	const name = event.queryStringParameters && event.queryStringParameters.name;
+
+	if (name !== null) {
+		getNameFromTable(name)
+			.then(returnedName => {
+				if (returnedName !== undefined) {
+					sendResponse(200, 'YES', callback);
+				} else {
+					sendResponse(200, 'NO', callback);
+				}
+			})
+			.catch(error => {
+				sendResponse(500, error, callback);
+			});
+	} else {
+		sendResponse(400, 'Define a name to query', callback);
+	}
 };

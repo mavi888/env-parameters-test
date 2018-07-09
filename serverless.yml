@@ -22,6 +22,12 @@ functions:
       - http:
           path: hello
           method: get
+  wasGreeted:
+    handler: handler.wasGreeted
+    events:
+      - http:
+          path: wasGreeted
+          method: get
 
 resources:
   Resources:
