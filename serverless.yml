@@ -1,0 +1,14 @@
+service: sls-hello-world
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  profile: marcia
+
+functions:
+  hello:
+    handler: handler.hello
+    events:
+      - http:
+          path: hello
+          method: get
