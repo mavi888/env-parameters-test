@@ -5,6 +5,16 @@ provider:
   runtime: nodejs8.10
   profile: marcia
 
+
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:PutItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:*:table/GreetNames"
+
+
 functions:
   hello:
     handler: handler.hello
@@ -12,3 +22,19 @@ functions:
       - http:
           path: hello
           method: get
+
+resources:
+  Resources:
+    GreetNamesTable:
+      Type: "AWS::DynamoDB::Table"
+      Properties:
+        AttributeDefinitions:
+        - AttributeName: "name"
+          AttributeType: "S"
+        KeySchema:
+        - AttributeName: "name"
+          KeyType: "HASH"
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: "GreetNames"
