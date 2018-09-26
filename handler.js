@@ -2,13 +2,18 @@
 
 const AWS = require('aws-sdk');
 const dynamo = new AWS.DynamoDB.DocumentClient();
+const middy = require('middy');
+const { ssm } = require('middy/middlewares');
+
+const TABLE_NAME = process.env.NAMES_DYNAMODB_TABLE;
+const STAGE = process.env.STAGE;
 
 function saveNameToTable(name) {
 	const item = {};
 	item.name = name;
 
 	const params = {
-		TableName: 'GreetNames',
+		TableName: TABLE_NAME,
 		Item: item
 	};
 
@@ -20,7 +25,7 @@ function getNameFromTable(name) {
 		Key: {
 			name: name
 		},
-		TableName: 'GreetNames'
+		TableName: TABLE_NAME
 	};
 
 	return dynamo
@@ -39,8 +44,10 @@ function sendResponse(statusCode, message, callback) {
 	callback(null, response);
 }
 
-module.exports.hello = (event, context, callback) => {
-	var message = 'Hello World';
+const hello = middy((event, context, callback) => {
+	const parameter = context.value1;
+
+	var message = `Hello World at ${parameter}`;
 
 	const name = event.queryStringParameters && event.queryStringParameters.name;
 
@@ -57,9 +64,20 @@ module.exports.hello = (event, context, callback) => {
 			});
 	}
 	sendResponse(200, message, callback);
-};
+});
 
-module.exports.wasGreeted = (event, context, callback) => {
+module.exports.hello = middy(hello).use(
+	ssm({
+		cache: true,
+		cacheExpiryInMillis: 1 * 60 * 1000, // 1 mins
+		setToContext: true,
+		names: {
+			value1: `/env-parameters-test/${STAGE}/value1`
+		}
+	})
+);
+
+const wasGreeted = middy((event, context, callback) => {
 	const name = event.queryStringParameters && event.queryStringParameters.name;
 
 	if (name !== null) {
@@ -77,4 +95,15 @@ module.exports.wasGreeted = (event, context, callback) => {
 	} else {
 		sendResponse(400, 'Define a name to query', callback);
 	}
-};
+});
+
+module.exports.wasGreeted = middy(wasGreeted).use(
+	ssm({
+		cache: true,
+		cacheExpiryInMillis: 1 * 60 * 1000, // 1 mins
+		setToContext: true,
+		names: {
+			value1: `/env-parameters-test/${STAGE}/value1`
+		}
+	})
+);
