@@ -1,0 +1,24 @@
+image: node:8.10
+
+stages:
+  - deploy
+
+before_script:
+    - npm install -g serverless
+    - bash install.sh
+
+deploy to develop:
+  only:
+    - develop
+  stage: deploy
+  script:
+    - bash deploy.sh dev us-east-1
+  environment: dev
+
+deploy to master:
+  only:
+    - master
+  stage: deploy
+  script:
+    - bash deploy.sh prod us-east-1
+  environment: prod
